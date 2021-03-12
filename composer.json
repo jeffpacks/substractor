@@ -1,0 +1,20 @@
+{
+	"name": "jeffpacks/substractor",
+	"description": "A sub-string extractor for the regex ignorant",
+	"type": "library",
+	"homepage": "https://github.com/jeffpacks/substractor",
+	"license": "MIT",
+	"authors": [{
+		"name": "Johan Fredrik Varen",
+		"email": "jeffpacks@varen.no",
+		"homepage": "https://github.com/jeffpacks"
+	}],
+	"require": {
+		"php": "^7.4"
+	},
+	"autoload": {
+		"psr-4": {
+			"jeffpacks\\substractor\\": "src"
+		}
+	}
+}
