@@ -80,10 +80,10 @@ class Substractor {
 	 *
 	 * Example:
 	 * $patterns = [
-	 *     '*.example.com' => '{domain}',
+	 *     '*.example.com' => '{sub}.{domain}',
 	 *     'example.com' => '{domain}',
 	 * ];
-	 * Substractor::extractMacros('you.example.com', $patterns); # Returns ['domain' => 'you.example.com']
+	 * Substractor::extractMacros('you.example.com', $patterns); # Returns ['sub' => 'you', domain' => 'example.com']
 	 * Substractor::extractMacros('example.com', $patterns); # Returns ['domain' => 'example.com']
 	 * Substractor::extractMacros('examplecom', $patterns); # Returns []
 	 * Substractor::extractMacros('example.net', $patterns); # Returns []
