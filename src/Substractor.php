@@ -26,9 +26,9 @@ class Substractor {
 	private static function substractorToRegEx(string $substractorPattern, array $additionalTranslations = []): string {
 
 		$defaultTranslations = [
-			'?' => '.{1}', // Must come before the * translation below or its ? quantifier gets replaced with this one
-			'*' => '.+?', // The ? forces a lazy matching, so "x1x" and "x2x" are found separately in "x1x x2x"
-			'/' => '\/' // An escape that preq_quote() doesn't do but that otherwise flips out preg_match
+			'?' => '.{1}', # Must come before the * translation below or its ? quantifier gets replaced with this one
+			'*' => '\S*?', # The ? forces a lazy matching, so "x1x" and "x2x" are found separately in "x1x x2x"
+			'/' => '\/' # An escape that preq_quote() doesn't do but that otherwise flips out preg_match
 		];
 
 		# Make sure all translations have a string key and a value
@@ -58,8 +58,15 @@ class Substractor {
 		# Bring the from-characters back
 		$regExPattern = str_replace(array_values($hide), array_keys($hide), $regExPattern);
 
-		# Translate the the from-characters into the to-characters
+		# Translate the from-characters into the to-characters
 		$regExPattern = str_replace(array_keys($translations), array_values($translations), $regExPattern);
+
+		# The last token should be greedy (remove the "?" modifier)
+		if (strrpos($regExPattern, '\S*?') === strlen($regExPattern) - 4) {
+			$regExPattern = substr_replace($regExPattern, '', strlen($regExPattern) - 1, 1);
+		} elseif (strrpos($regExPattern, '(\S*?)') === strlen($regExPattern) - 6) {
+			$regExPattern = substr_replace($regExPattern, '', strlen($regExPattern) - 2, 1);
+		}
 
 		return $regExPattern;
 
@@ -87,45 +94,37 @@ class Substractor {
 	 */
 	public static function extractMacros(string $string, $macroPattern): array {
 
-		$substractorPatterns = (array) $macroPattern;
+		$macroPatterns = (array) $macroPattern;
 
 		$macroMaps = [];
 
-		foreach ($substractorPatterns as $index => $substractorPattern) {
+		foreach ($macroPatterns as $index => $macroPattern) {
 			# If the index is a string, it should represent a Substractor pattern that the string must match before any extraction is carried out
 			if (!is_integer($index) && is_string($index) && !self::matches($string, $index)) {
 				continue;
 			}
 
 			# Get a reg-ex pattern we will use to extract all macro tokens (protecting any '{' and '}' from escaping)
-			$macroRegExPattern = self::substractorToRegEx($substractorPattern, ['{', '}']);
+			$macroRegExPattern = self::substractorToRegEx($macroPattern, ['{', '}']);
 
-			preg_match_all('/{(.*?)}/', $macroRegExPattern, $macroTokens);
+			preg_match_all('/{(\S*?)}/', $macroRegExPattern, $macroTokens);
 
 			# Prepare macro token => reg-ex translations
 			$macroTranslations = [];
-			if (isset($macroTokens[1])) { // Entry [1] contains macro names (macro token without the {}'s)
+			if (isset($macroTokens[1])) { # Entry [1] contains macro names (macro tokens without the {}'s)
 				foreach ($macroTokens[1] as $macroName) {
-					$macroTranslations = array_merge($macroTranslations, [
-						' {' . $macroName . '} ' => ' (\S+) ',
-						'{' . $macroName . '} ' => '(\S+) ',
-						' {' . $macroName . '}' => ' (\S+)',
-						'{' . $macroName . '}' => '(.+)',
-						' * ' => ' .+ ', // \
-						'* ' => '.+ ',   //  } Overriding the default '*' translations so they don't get grouped and mess up the mapping order
-						' *' => ' .+',   // /
-					]);
+					$macroTranslations = array_merge($macroTranslations, ['{' . $macroName . '}' => '(\S*?)']);
 				}
 			}
 
 			# Get a reg-ex pattern where each macro token is replaced with a reg-ex token
-			$regExPattern = self::substractorToRegEx($substractorPattern, $macroTranslations);
+			$regExPattern = self::substractorToRegEx($macroPattern, $macroTranslations);
 
 			# Get the values each macro token corresponds to
 			preg_match("/$regExPattern/", $string, $macroValueResult);
 
 			# Get the macro name from each macro token
-			preg_match_all('/{(.*?)}/', $substractorPattern, $macroNameResult);
+			preg_match_all('/{(.*?)}/', $macroPattern, $macroNameResult);
 
 			# Now map each macro name to the corresponding macro value
 			$macroMap = [];
