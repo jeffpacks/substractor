@@ -43,6 +43,8 @@ class SubstractorTest extends TestCase {
 			['*.com/*.html', '*.*.com/*.html']
 		));
 
+		$this->assertEquals(['mailto:jeffpacks@varen.no'], Substractor::subs('[e-mail](mailto:jeffpacks@varen.no)', 'mailto:*@*', ')'));
+
 	}
 
 	public function testMacros() {
@@ -103,6 +105,21 @@ class SubstractorTest extends TestCase {
 				'{one}.{two}.{three}.{four}',
 			])
 		);
+
+	}
+
+	public function testDemo() {
+
+		# * - Zero or more characters
+
+		$text = 'Please contact me via phone – +47 920 56 892 – or by e-mail (johan.fredrik@keystone.no or johan.fredrik@varen.no). Good luck!';
+		$pattern = '*@*';
+
+		foreach (Substractor::subs($text, $pattern, ['(', ')']) as $sub) {
+			echo "\n$sub\n";
+		}
+
+		$this->assertIsString($text);
 
 	}
 
