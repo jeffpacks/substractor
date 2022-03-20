@@ -187,7 +187,7 @@ class Substractor {
 	}
 
 	/**
-	 * Indicates whether or not a string fully matches a given Substractor pattern.
+	 * Indicates whether a string fully matches a given pattern.
 	 *
 	 * @param string $string The string of words to be matched.
 	 * @param string $pattern The Substractor pattern to match against.
@@ -197,9 +197,7 @@ class Substractor {
 
 		$regExPattern = self::substractorToRegEx($pattern);
 
-		preg_match("/$regExPattern/", $string, $result);
-
-		return (boolean) $result;
+		return (bool) preg_match("/$regExPattern/", $string);
 
 	}
 
