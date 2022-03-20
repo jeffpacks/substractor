@@ -90,13 +90,16 @@ class Substractor {
 	 *
 	 * @param string $string The string to extract the macros from.
 	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such.
+	 * @param string|string[]|null $redact Characters to redact (set to space) before extraction.
 	 * @return string[] Zero or more name => value entries, each string representing a macro
 	 */
-	public static function macros(string $string, $macroPattern): array {
+	public static function macros(string $string, $macroPattern, $redact = null): array {
 
 		$macroPatterns = (array) $macroPattern;
 
 		$macroMaps = [];
+
+		$string = $redact ? str_replace($redact, '', $string) : $string;
 
 		foreach ($macroPatterns as $index => $macroPattern) {
 			# If the index is a string, it should represent a Substractor pattern that the string must match before any extraction is carried out
@@ -164,11 +167,14 @@ class Substractor {
 	 *
 	 * @param string $string The string to be searched.
 	 * @param string|string[] $pattern The Substractor pattern to match against or an array of such.
+	 * @param string|string[]|null $redact Characters to redact (set to space) before extraction.
 	 * @return string[] The strings matching the given pattern
 	 */
-	public static function subs(string $string, $pattern): array {
+	public static function subs(string $string, $pattern, $redact = null): array {
 
 		$substractorPatterns = (array) $pattern;
+
+		$string = $redact ? str_replace($redact, '', $string) : $string;
 
 		$result = [];
 
@@ -191,11 +197,14 @@ class Substractor {
 	 *
 	 * @param string $string The string of words to be matched.
 	 * @param string $pattern The Substractor pattern to match against.
+	 * @param string|string[]|null $redact Characters to redact (set to space) before matching.
 	 * @return boolean True if the pattern matches, false otherwise
 	 */
-	public static function matches(string $string, string $pattern): bool {
+	public static function matches(string $string, string $pattern, $redact = null): bool {
 
 		$regExPattern = self::substractorToRegEx($pattern);
+
+		$string = $redact ? str_replace($redact, '', $string) : $string;
 
 		return (bool) preg_match("/$regExPattern/", $string);
 
