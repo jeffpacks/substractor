@@ -92,7 +92,7 @@ class Substractor {
 	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such.
 	 * @return string[] Zero or more name => value entries, each string representing a macro
 	 */
-	public static function extractMacros(string $string, $macroPattern): array {
+	public static function macros(string $string, $macroPattern): array {
 
 		$macroPatterns = (array) $macroPattern;
 
@@ -160,13 +160,13 @@ class Substractor {
 	}
 
 	/**
-	 * Provides any sub-strings that fully match a given Substractor pattern.
+	 * Provides any sub-strings that fully match a given pattern.
 	 *
 	 * @param string $string The string to be searched.
 	 * @param string|string[] $pattern The Substractor pattern to match against or an array of such.
 	 * @return string[] The strings matching the given pattern
 	 */
-	public static function extractStrings(string $string, $pattern): array {
+	public static function subs(string $string, $pattern): array {
 
 		$substractorPatterns = (array) $pattern;
 
