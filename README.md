@@ -29,9 +29,9 @@ There is a third type of pattern token that you can use to extract named parts o
 
 And that's it. There is a ton of pattern restrictions you won't be able to use Substractor for, but that's why we have `preg_match()` and pals. Substractor is still very useful for simple sub-string matching and extraction.
 
-## The methods
+# The methods
 
-### Substractor::matches()
+## Substractor::matches()
 This method indicates whether a given string matches a pattern that you specify. Here' an example:
 
 ```php
@@ -45,13 +45,13 @@ Substractor::matches(
 ));
 ```
 
-### Substractor::subs()
+## Substractor::subs()
 We can extract all sub-strings that fully match a given pattern with this method. Say you want to extract all e-mail addresses from a string. It'll be easy – like breaking a toothpick:
 ```php
 $addresses = Substractor::subs('Please contact jeffpacks@varen.no or jfvaren@gmail.com for more info', '*@*.*');
 ```
 
-### Substractor::macros()
+## Substractor::macros()
 This one is powerful. It allows you to extract named sub-strings. If you want to parse a route URL, like in Laravel, you would do it like so:
 ```php
 # Returns ['userId' => '42', 'settingId' => '3221']
@@ -84,15 +84,15 @@ $segments = Substractor::macros('1.2.3-alpha.1', $patterns);
 $segments = Substractor::macros('1.2.3-beta.1', $patterns);
 ```
 
-### Redaction
+## Redaction
 Attempting to extract the `mailto` URI from the Markdown string `[e-mail](mailto:jeffpacks@varen.no)` using the pattern `mailto:*@*` would result in the string `mailto:jeffpacks@varen.no)` (note the trailing parenthesis). All `Substractor` methods accept a `$redact` parameter that lets you redact/remove any given characters before the matching or extraction is performed.
 Using redaction, we can get rid of the trailing parenthesis like this:
 ```php
 $result = Substractor::subs('[e-mail](mailto:jeffpacks@varen.no)', 'mailto:*@*', ')');
 ```
 
-## Authors
+# Authors
 * [Johan Fredrik Varen](mailto:jeffpacks@varen.no)
 
-## License
+# License
 MIT License
