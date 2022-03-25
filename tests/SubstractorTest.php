@@ -34,6 +34,8 @@ class SubstractorTest extends TestCase {
 
 		$this->assertTrue(Substractor::matches('1.2.3-beta.1', '*.*.*-*'));
 
+		$this->assertTrue(Substractor::matches('[Foo Bar](https://example.test/)', '[*](*)', ' '));
+
 	}
 
 	public function testSubs() {
@@ -104,6 +106,22 @@ class SubstractorTest extends TestCase {
 			Substractor::macros('...ok', [
 				'{one}.{two}.{three}.{four}',
 			])
+		);
+
+		$string = "1.4.2-beta.2";
+		Substractor::matches($string, '*.*.*-beta.*');
+		Substractor::macros($string, '{major}.{minor}.{patch}-{preRelease}.{betaVersion}'); # => ['betaVersion' => '2']
+
+		$this->assertEquals(
+			[
+				'text' => 'Foo Bar',
+				'url' => 'https://example.test/'
+			],
+			Substractor::macros(
+				'[Foo Bar](https://example.test/)',
+				'[{text}]({url})',
+				' '
+			)
 		);
 
 	}

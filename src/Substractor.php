@@ -99,7 +99,18 @@ class Substractor {
 
 		$macroMaps = [];
 
-		$string = $redact ? str_replace($redact, '', $string) : $string;
+		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
+		$redactions = [];
+		if (is_array($redact)) {
+			foreach ($redact as $subject) {
+				$redactions[$subject] = md5($subject);
+			}
+		} elseif (is_string($redact)) {
+			$redactions[$redact] = md5($redact);
+		}
+
+		# Perform the redactions
+		$string = $redactions ? str_replace(array_keys($redactions), array_values($redactions), $string) : $string;
 
 		foreach ($macroPatterns as $index => $macroPattern) {
 			# If the index is a string, it should represent a Substractor pattern that the string must match before any extraction is carried out
@@ -158,7 +169,15 @@ class Substractor {
 			}
 		}
 
-		return $macroMaps[$winner];
+		$result = $macroMaps[$winner];
+
+		if ($redactions) {
+			foreach ($result as $key => $value) {
+				$result[$key] = str_replace(array_values($redactions), array_keys($redactions), $value);
+			}
+		}
+
+		return $result;
 
 	}
 
