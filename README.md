@@ -29,7 +29,7 @@ There is a third type of tokens, called macros, that you can use to extract name
 
 And that's it. There is a ton of pattern restrictions you won't be able to use Substractor for, but that's why we have `preg_match()` and pals. Substractor is still very useful for simple sub-string matching and extraction.
 
-## The methods
+# The methods
 
 ## Substractor::matches()
 This method indicates whether a given string matches a pattern that you specify. Here' an example:
