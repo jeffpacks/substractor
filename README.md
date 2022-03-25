@@ -94,7 +94,7 @@ $result = Substractor::subs('[e-mail](mailto:jeffpacks@varen.no)', 'mailto:*@*',
 Another common need for redactions is when your wildcard or macro should also match whitespaces. Consider the string `[Click me](https://example.test)` where the link text contains a space character. This string would not match with a pattern like `[*](*)` because the `*` wildcard tries to match whole words and does not include whitespaces. This can be solved by specifying the space character as something to redact before the matching or extraction is performed. Here's an example:
 ```php
 $string = '[Click me](https://example.test)';
-$isMarkdownLink = Substractor::matches($string, '[*][http?://*]', ' ');
+$isMarkdownLink = Substractor::matches($string, '[*](http?://*)', ' ');
 $segments = Substractor::macros($string, '[{text}]({url})', ' ');
 # $segments is now ['text' => 'Click me', 'url' => 'https://example.test']
 ```
