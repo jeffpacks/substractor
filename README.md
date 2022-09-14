@@ -84,6 +84,36 @@ $segments = Substractor::macros('1.2.3-alpha.1', $patterns);
 $segments = Substractor::macros('1.2.3-beta.1', $patterns);
 ```
 
+## Substractor::replace()
+If you want to replace or manipulate a specific sub-string within some string, you can use the `Substractor::replace()` method. By specifying a macro pattern, you can tell it which of those macros you want to replace or manipulate. Here's an example where we encrypt and decrypt the password segment of a URL:
+
+```php
+$secret = 'OQvBIbYzkz';
+$url = 'https://john:password123@example.test';
+
+$encryptedUrl = (string) Substractor::replace($url, '*://*:{pass}@*')->pass(fn($password) => openssl_encrypt($password, 'AES-128-CTR', $secret, 0, '1234567891011121'));
+
+$decryptedUrl = (string) Substractor::replace($encryptedUrl, '*://*:{pass}@*')->pass(fn($password) => openssl_decrypt($password, 'AES-128-CTR', $secret, 0, '1234567891011121'));
+
+echo "Encrypted: $encryptedUrl\n";
+echo "Decrypted: $decryptedUrl\n";
+
+# Outputs:
+# Encrypted: https://john:emIdK6ITultd0S0=@example.test
+# Decrypted: https://john:password123@example.test
+```
+
+The object returned from `Substrator::replace()` have (magic) methods that correspond to the macros you specify in your macro pattern. This way, you can specifically target the sub-strings you want to replace, even if some of them are identical. Each method will return the same object, so you can chain your methods:
+
+```php
+$url = 'http://john:https@example.test:80';
+
+echo (string) Substractor::replace($url, '{protocol}://{user}:{pass}@{host}:{port}')->protocol('https')->port('22');
+
+# Outputs:
+# https://john:password123@example.test:22
+```
+
 ## Redaction
 Attempting to extract the `mailto` URI from the Markdown string `[e-mail](mailto:jeffpacks@varen.no)` using the pattern `mailto:*@*` would result in the string `mailto:jeffpacks@varen.no)` (note the trailing parenthesis). All `Substractor` methods accept a `$redact` parameter that lets you redact/remove any given characters before the matching or extraction is performed.
 Using redaction, we can get rid of the trailing parenthesis like this:

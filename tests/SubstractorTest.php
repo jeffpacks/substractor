@@ -126,4 +126,17 @@ class SubstractorTest extends TestCase {
 
 	}
 
+	public function testReplace(): void {
+
+		$string = 'http://foo:foo@example.test:80:/';
+
+		$expected = 'https://foo:' . md5('foo') . '@example.test:22:/';
+
+		$this->assertEquals(
+			$expected,
+			(string) Substractor::replace($string, '{protocol}://{username}:{password}@{host}:{port}:/')->protocol('https')->password(fn(string $password) => md5($password))->port(22)
+		);
+
+	}
+
 }
