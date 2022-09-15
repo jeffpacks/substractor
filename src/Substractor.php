@@ -113,6 +113,49 @@ class Substractor {
 	}
 
 	/**
+	 * Indicates whether a string fully matches a given pattern.
+	 *
+	 * @param string $string The string of words to be matched.
+	 * @param string $pattern The Substractor pattern to match against.
+	 * @param string|string[]|null $redact Characters to redact (set to space) before matching.
+	 * @return boolean True if the pattern matches, false otherwise
+	 */
+	public static function matches(string $string, string $pattern, $redact = null): bool {
+
+		$regExPattern = self::substractorToRegEx($pattern);
+
+		$string = $redact ? str_replace($redact, '', $string) : $string;
+
+		return (bool) preg_match("/$regExPattern/", $string);
+
+	}
+
+	/**
+	 * Temporarily redacts any occurrence of a given sub-string from a given string.
+	 *
+	 * @param $string
+	 * @param $redact
+	 * @return string
+	 */
+	private static function redact($string, $redact): string {
+
+		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
+		self::$redactions = [];
+		if (is_array($redact)) {
+			foreach ($redact as $subject) {
+				self::$redactions[$subject] = md5($subject);
+			}
+		} elseif (is_string($redact)) {
+			self::$redactions[$redact] = md5($redact);
+		}
+
+		# Perform the redactions
+		return self::$redactions ? str_replace(array_keys(self::$redactions), array_values(self::$redactions), $string) : $string;
+
+
+	}
+
+	/**
 	 * Replaces or manipulates sub-strings in a given string.
 	 *
 	 * The object returned from this method will have methods that correpond to the macros of the given macro pattern.
@@ -184,49 +227,6 @@ class Substractor {
 			}
 
 		};
-
-	}
-
-	/**
-	 * Indicates whether a string fully matches a given pattern.
-	 *
-	 * @param string $string The string of words to be matched.
-	 * @param string $pattern The Substractor pattern to match against.
-	 * @param string|string[]|null $redact Characters to redact (set to space) before matching.
-	 * @return boolean True if the pattern matches, false otherwise
-	 */
-	public static function matches(string $string, string $pattern, $redact = null): bool {
-
-		$regExPattern = self::substractorToRegEx($pattern);
-
-		$string = $redact ? str_replace($redact, '', $string) : $string;
-
-		return (bool) preg_match("/$regExPattern/", $string);
-
-	}
-
-	/**
-	 * Temporarily redacts any occurrence of a given sub-string from a given string.
-	 *
-	 * @param $string
-	 * @param $redact
-	 * @return string
-	 */
-	private static function redact($string, $redact): string {
-
-		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
-		self::$redactions = [];
-		if (is_array($redact)) {
-			foreach ($redact as $subject) {
-				self::$redactions[$subject] = md5($subject);
-			}
-		} elseif (is_string($redact)) {
-			self::$redactions[$redact] = md5($redact);
-		}
-
-		# Perform the redactions
-		return self::$redactions ? str_replace(array_keys(self::$redactions), array_values(self::$redactions), $string) : $string;
-
 
 	}
 
