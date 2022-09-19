@@ -115,21 +115,28 @@ echo (string) Substractor::replace($url, '{protocol}://{user}:{pass}@{host}:{por
 ```
 
 ## Redaction
-Attempting to extract the `mailto` URI from the Markdown string `[e-mail](mailto:jeffpacks@varen.no)` using the pattern `mailto:*@*` would result in the string `mailto:jeffpacks@varen.no)` (note the trailing parenthesis). All `Substractor` methods accept a `$redact` parameter that lets you redact/remove any given characters before the matching or extraction is performed.
-Using redaction, we can get rid of the trailing parenthesis like this:
-```php
-$result = Substractor::subs('[e-mail](mailto:jeffpacks@varen.no)', 'mailto:*@*', ')');
-```
+Sometimes characters get in the way of what you're trying to match and/or extract. Consider a Markdown document containing links, such as this one: `You can [e-mail me](mailto:jeffpacks@varen.no) or reach me on [Github](https://github.com/jeffpacks)`. Attempting to extract the sub-string `e-mail me` using the pattern `[*]` would yield no result because the single `*` wildcard tries to match a single word, but there are two words between these brackets. This is a case where we can use the `redaction` parameter that all the Substractor methods accept. There are 3 types of redactions:
+1. Pre-redaction: A given character/string will be removed before the matching takes place, but is left untouched in the returned sub-strings
+2. Post-redaction: A given character/string is left untouched prior to matching, but is removed from the returned sub-strings
+3. Full redaction: A given character/string is removed prior to matching and is also removed from the returned sub-strings (a combination of pre- and post-redaction).
 
-Another common need for redactions is when your wildcard or macro should also match whitespaces. Consider the string `[Click me](https://example.test)` where the link text contains a space character. This string would not match with a pattern like `[*](*)` because the `*` wildcard tries to match whole words and does not include whitespaces. This can be solved by specifying the space character as something to redact before the matching or extraction is performed. Here's an example:
+We can use pre-redaction to remove the space character between the two words prior to matching, but allow it to remain untouched in the returned sub-string:
 ```php
-$string = '[Click me](https://example.test)';
-$isMarkdownLink = Substractor::matches($string, '[*][http?://*]', ' ');
-$segments = Substractor::macros($string, '[{text}]({url})', ' ');
-# $segments is now ['text' => 'Click me', 'url' => 'https://example.test']
+$markdown = 'You can [e-mail me](mailto:jeffpacks@varen.no) or reach me on [Github](https://github.com/jeffpacks)';
+$result = Substractor::subs($markdown, '[*]', ' ');
 ```
+The above will give the sub-string `[e-mail me]`, including the brackets. If we don't want the brackets, we will have to do a post-redaction on those:
+```php
+$markdown = 'You can [e-mail me](mailto:jeffpacks@varen.no) or reach me on [Github](https://github.com/jeffpacks)';
+$result = Substractor::subs($markdown, '[*]', [
+    ' ', # pre-redact the space
+    '[' => false, # false indicates post-redaction 
+    ']' => false
+]);
+```
+This gives us the `e-mail me` sub-string only, as the brackets have been post-redacted.
 
-Substrings that are redacted prior to extraction are restored back into the returned returned result. In the example above, the space in `Click me` is removed before the extraction, but is restored back in so the `text` entry is still `Click me`. 
+Full redaction is a less common use-case, but is indicated by specifying a boolean `true` as the value of the redaction array.
 
 # Authors
 * [Johan Fredrik Varen](mailto:jeffpacks@varen.no)

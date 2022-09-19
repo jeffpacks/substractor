@@ -45,7 +45,59 @@ class SubstractorTest extends TestCase {
 			['*.com/*.html', '*.*.com/*.html']
 		));
 
-		$this->assertEquals(['mailto:jeffpacks@varen.no'], Substractor::subs('[e-mail](mailto:jeffpacks@varen.no)', 'mailto:*@*', ')'));
+		# [Contact me](mailto:jeffpacks@varen.no)
+		# [     *    ](mailto:   *     @   *    )
+		$this->assertEquals(
+			['[Contact me]'],
+			Substractor::subs(
+				'[Contact me](mailto:jeffpacks@varen.no)',
+				'[*]',
+				' '
+			)
+		);
+
+		$this->assertEquals(
+			['Contact me'],
+			Substractor::subs(
+				'[Contact me](mailto:jeffpacks@varen.no)',
+				'[*]',
+				[
+					' ',
+					'[' => false,
+					']' => false
+				]
+			)
+		);
+
+		$this->assertEquals(
+			['mailto:jeffpacks@varen.no)'],
+			Substractor::subs(
+				'[Contact me](mailto:jeffpacks@varen.no)',
+				'mailto:*@*'
+			)
+		);
+
+		$this->assertEquals(
+			['mailto:jeffpacks@varen.no'],
+			Substractor::subs(
+				'[Contact me](mailto:jeffpacks@varen.no)',
+				'mailto:*@*',
+				[
+					')' => false
+				]
+			)
+		);
+
+		$this->assertEquals(
+			[
+				'[Foo Bar](https://example.test/)'
+			],
+			Substractor::subs(
+				'[Foo Bar](https://example.test/)',
+				'[*](*)',
+				' '
+			)
+		);
 
 	}
 
@@ -121,6 +173,21 @@ class SubstractorTest extends TestCase {
 				'[Foo Bar](https://example.test/)',
 				'[{text}]({url})',
 				' '
+			)
+		);
+
+		$this->assertEquals(
+			[
+				'text' => 'e-mail me',
+				'uri' => 'jeffpacks@varen.no'
+			],
+			Substractor::macros(
+				'You can [e-mail me](mailto:jeffpacks@varen.no) or reach me on [Github](https://github.com/jeffpacks',
+				'[{text}]({uri})',
+				[
+					' ',
+					'mailto:' => false
+				]
 			)
 		);
 

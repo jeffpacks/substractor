@@ -18,7 +18,8 @@ use Closure;
  */
 class Substractor {
 
-	private static array $redactions = [];
+	private static array $preRedactions = [];
+	private static array $postRedactions = [];
 
 	/**
 	 * Extracts and provides any macros found in a given string.
@@ -47,7 +48,7 @@ class Substractor {
 
 		$macroMaps = [];
 
-		$string = self::redact($string, $redact);
+		$string = self::preRedact($string, $redact);
 
 		foreach ($macroPatterns as $index => $macroPattern) {
 			# If the index is a string, it should represent a Substractor pattern that the string must match before any extraction is carried out
@@ -108,7 +109,7 @@ class Substractor {
 
 		$result = $macroMaps[$winner];
 
-		return self::unredact($result);
+		return self::postRedact($result);
 
 	}
 
@@ -131,26 +132,58 @@ class Substractor {
 	}
 
 	/**
-	 * Temporarily redacts any occurrence of a given sub-string from a given string.
-	 *
-	 * @param $string
-	 * @param $redact
-	 * @return string
+	 * @param array $strings
+	 * @return array
 	 */
-	private static function redact($string, $redact): string {
+	private static function postRedact(array $strings): array {
 
-		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
-		self::$redactions = [];
-		if (is_array($redact)) {
-			foreach ($redact as $subject) {
-				self::$redactions[$subject] = md5($subject);
+		foreach (array_keys($strings) as $key) {
+			if (self::$preRedactions) {
+				$strings[$key] = str_replace(array_values(self::$preRedactions), array_keys(self::$preRedactions), $strings[$key]);
 			}
-		} elseif (is_string($redact)) {
-			self::$redactions[$redact] = md5($redact);
+			if (self::$postRedactions) {
+				$strings[$key] = str_replace(self::$postRedactions, '', $strings[$key]);
+			}
 		}
 
-		# Perform the redactions
-		return self::$redactions ? str_replace(array_keys(self::$redactions), array_values(self::$redactions), $string) : $string;
+		self::$preRedactions = [];
+		self::$postRedactions = [];
+
+		return $strings;
+
+	}
+
+	/**
+	 * Redacts any occurrence of a given sub-string from a given string.
+	 *
+	 * @param $string
+	 * @param $redact string|string[]|bool[]
+	 * @return string
+	 */
+	private static function preRedact($string, $redact): string {
+
+		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
+		self::$preRedactions = [];
+		$redact = is_array($redact) ? $redact : [$redact];
+
+		foreach ($redact as $key => $value) {
+
+			if (is_string($key)) {
+				if ($value === true) { # Full redaction – remove prior to matching and remove from returned result
+					$string = str_replace($key, '', $string);
+				} elseif ($value === false) { # Post-redaction – keep prior to matching but remove from returned result
+					self::$postRedactions[] = $key;
+				} else { # Pre-redaction – remove prior to matching but keep in returned result
+					self::$preRedactions[$key] = md5($key);
+				}
+			} else {
+				self::$preRedactions[$value] = md5($value);
+			}
+
+		}
+
+		# Perform the pre-redactions
+		return self::$preRedactions ? str_replace(array_keys(self::$preRedactions), array_values(self::$preRedactions), $string) : $string;
 
 
 	}
@@ -242,7 +275,7 @@ class Substractor {
 
 		$substractorPatterns = (array) $pattern;
 
-		$string = self::redact($string, $redact);
+		$string = self::preRedact($string, $redact);
 
 		$result = [];
 
@@ -256,7 +289,7 @@ class Substractor {
 			}
 		}
 
-		return self::unredact($result);
+		return self::postRedact($result);
 
 	}
 
@@ -313,22 +346,6 @@ class Substractor {
 		}
 
 		return $regExPattern;
-
-	}
-
-	/**
-	 * @param array $strings
-	 * @return array
-	 */
-	private static function unredact(array $strings): array {
-
-		if (self::$redactions) {
-			foreach ($strings as $key => $value) {
-				$strings[$key] = str_replace(array_values(self::$redactions), array_keys(self::$redactions), $value);
-			}
-		}
-
-		return $strings;
 
 	}
 
