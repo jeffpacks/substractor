@@ -162,6 +162,10 @@ class Substractor {
 	 */
 	private static function preRedact($string, $redact): string {
 
+		if (!$redact) {
+			return $string;
+		}
+
 		# Create a redaction map, so we can restore the redaction tokens after the regex ops are done
 		self::$preRedactions = [];
 		$redact = is_array($redact) ? $redact : [$redact];
