@@ -36,6 +36,10 @@ class SubstractorTest extends TestCase {
 
 		$this->assertTrue(Substractor::matches('[Foo Bar](https://example.test/)', '[*](*)', ' '));
 
+		$this->assertTrue(Substractor::matches('Filename.1.0.0.json', '*.*.*.*.json'));
+
+		$this->assertTrue(Substractor::matches('Filename.1.0.0.json', '*.*.json'));
+
 	}
 
 	public function testSubs() {
