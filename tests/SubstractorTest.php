@@ -103,6 +103,26 @@ class SubstractorTest extends TestCase {
 			)
 		);
 
+		$this->assertEquals(
+			['FileA.json', 'FileB.json', 'FileC.json'],
+			Substractor::subs(
+				'"File": "FileA.json", "Example": "FileB.json", "File": "FileC.json"',
+				[
+					'"File": "*.json"' => '*.json'
+				],
+				['"' => false]
+			)
+		);
+
+		$this->assertEmpty(
+			Substractor::subs(
+				'"Example": "FileB.json"',
+				[
+					'"File": "*.json"' => '*.json'
+				]
+			)
+		);
+
 	}
 
 	public function testMacros() {
@@ -193,6 +213,36 @@ class SubstractorTest extends TestCase {
 					'mailto:' => false
 				]
 			)
+		);
+
+	}
+
+	public function testMacrosAll() {
+
+		$this->assertEquals(
+			[
+				'a' => ['foo', 'hurf'],
+				'b' => ['bar', 'durf']
+			],
+			Substractor::macrosAll('foo:bar hurf:durf', '{a}:{b}')
+		);
+
+	}
+
+	public function testPluck(): void {
+
+		$this->assertEquals(
+			'foo',
+			Substractor::pluck('foo:bar hurf:durf', '{a}:{b}', 'a')
+		);
+
+	}
+
+	public function testPluckAll(): void {
+
+		$this->assertEquals(
+			['foo', 'hurf'],
+			Substractor::pluckAll('foo:bar hurf:durf', '{a}:{b}', 'a')
 		);
 
 	}

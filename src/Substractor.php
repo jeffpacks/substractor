@@ -14,7 +14,7 @@ use Closure;
  * "path/to/*.json" matches "path/to/composer.json", "path/to/package.json" but also "path/to/some/other/file.json"
  * "1.0.?" matches "1.0.0" and "1.0.1" but not "1.0.10"
  * "1.0.??" matches "1.0.10" and "1.0.15" but not "1.0.5"
- * "{major}.{minor}.{patch}" extracts "2", "5" and "1" respectively
+ * "{major}.{minor}.{patch}" extracts "2", "5" and "1" respectively from "2.5.1"
  */
 class Substractor {
 
@@ -22,27 +22,45 @@ class Substractor {
 	private static array $postRedactions = [];
 
 	/**
-	 * Extracts and provides any macros found in a given string.
-	 *
-	 * If the string needs to match a certain pattern before the macros can be extracted, you specify that pattern by
-	 * using it as the key of the macro pattern.
-	 *
-	 * Example:
-	 * $patterns = [
-	 *     '*.example.com' => '{sub}.{domain}',
-	 *     'example.com' => '{domain}',
-	 * ];
-	 * Substractor::extractMacros('you.example.com', $patterns); # Returns ['sub' => 'you', domain' => 'example.com']
-	 * Substractor::extractMacros('example.com', $patterns); # Returns ['domain' => 'example.com']
-	 * Substractor::extractMacros('examplecom', $patterns); # Returns []
-	 * Substractor::extractMacros('example.net', $patterns); # Returns []
+	 * Extracts and provides the first macros found in a given string.
 	 *
 	 * @param string $string The string to extract the macros from.
-	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such.
+	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such, optionally keyed by a key pattern.
 	 * @param string|string[]|null $redact Characters to redact before extraction.
-	 * @return string[] Zero or more name => value entries, each string representing a macro
+	 * @return string[] Zero or more macro-name => substring entries, each entry representing a macro
 	 */
 	public static function macros(string $string, $macroPattern, $redact = null): array {
+		return self::runMacroSearch($string, $macroPattern, $redact, function(string $regExPattern, string $string) {
+			preg_match("/$regExPattern/", $string, $macroValueResult);
+			return $macroValueResult;
+		});
+	}
+
+	/**
+	 * Extracts and provides any macros found in a given string.
+	 *
+	 * @param string $string The string to extract the macros from.
+	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such, optionally keyed by a key pattern.
+	 * @param string|string[]|null $redact Characters to redact before extraction.
+	 * @return string[] Zero or more macro name => substring entries, each string representing a macro
+	 */
+	public static function macrosAll(string $string, $macroPattern, $redact = null): array {
+		return self::runMacroSearch($string, $macroPattern, $redact, function(string $regExPattern, string $string) {
+			preg_match_all("/$regExPattern/", $string, $macroValueResult);
+			return $macroValueResult;
+		});
+	}
+
+	/**
+	 * Extracts and provides any macros found in a given string, based on a given extraction function.
+	 *
+	 * @param string $string The string to extract the macros from.
+	 * @param string|string[] $macroPattern A Substractor pattern with macros to extract or an array of such, optionally keyed by a key pattern.
+	 * @param string|string[]|null $redact Characters to redact before extraction.
+	 * @param Closure $searchFunction The function that performs the extraction (should return preg_match() or preg_match_all() results)
+	 * @return string[]|array[] Zero or more macro name => substring entries, each entry representing one or more macro matches
+	 */
+	private static function runMacroSearch(string $string, $macroPattern, $redact, Closure $searchFunction): array {
 
 		$macroPatterns = (array) $macroPattern;
 
@@ -58,7 +76,6 @@ class Substractor {
 
 			# Get a reg-ex pattern we will use to extract all macro tokens (protecting any '{' and '}' from escaping)
 			$macroRegExPattern = self::substractorToRegEx($macroPattern, ['{', '}']);
-
 			preg_match_all('/{(\S*?)}/', $macroRegExPattern, $macroTokens);
 
 			# Prepare macro token => reg-ex translations
@@ -73,7 +90,7 @@ class Substractor {
 			$regExPattern = self::substractorToRegEx($macroPattern, $macroTranslations);
 
 			# Get the values each macro token corresponds to
-			preg_match("/$regExPattern/", $string, $macroValueResult);
+			$macroValueResult = $searchFunction($regExPattern, $string);
 
 			# Get the macro name from each macro token
 			preg_match_all('/{(.*?)}/', $macroPattern, $macroNameResult);
@@ -117,7 +134,7 @@ class Substractor {
 	 * Indicates whether a string fully matches a given pattern.
 	 *
 	 * @param string $string The string of words to be matched.
-	 * @param string $pattern The Substractor pattern to match against.
+	 * @param string $pattern The wildcard pattern to match against.
 	 * @param string|string[]|null $redact Characters to redact (set to space) before matching.
 	 * @return boolean True if the pattern matches, false otherwise
 	 */
@@ -129,6 +146,32 @@ class Substractor {
 
 		return (bool) preg_match("/$regExPattern/", $string);
 
+	}
+
+	/**
+	 * Extracts and provides a single substring.
+	 *
+	 * @param string $string The string to extract the macros from.
+	 * @param string|string[] $macroPattern A macro pattern with macros to extract or an array of such, optionally keyed by a key pattern.
+	 * @param string $macroName The name of the macro whose substring to return.
+	 * @param string|string[]|null $redact Characters to redact before extraction.
+	 * @return string|null
+	 */
+	public static function pluck(string $string, string $macroPattern, string $macroName, $redact = null): ?string {
+		return self::macros($string, $macroPattern, $redact)[$macroName] ?? null;
+	}
+
+	/**
+	 * Extracts and provides a set of substrings.
+	 *
+	 * @param string $string The string to extract the macros from.
+	 * @param string|string[] $macroPattern A macro pattern with macros to extract or an array of such, optionally keyed by a key pattern.
+	 * @param string $macroName The name of the macro whose set of substrings to return.
+	 * @param string|string[]|null $redact Characters to redact before extraction.
+	 * @return string[]
+	 */
+	public static function pluckAll(string $string, string $macroPattern, string $macroName, $redact = null): array {
+		return self::macrosAll($string, $macroPattern, $redact)[$macroName] ?? [];
 	}
 
 	/**
@@ -156,11 +199,11 @@ class Substractor {
 	/**
 	 * Redacts any occurrence of a given sub-string from a given string.
 	 *
-	 * @param $string
-	 * @param $redact string|string[]|bool[]
+	 * @param string $string The string to redact the sub-strings from.
+	 * @param $redact string|string[]|bool[] A sub-string or strings to redact, or an array keyed by sub-strings to redact and valued as TRUE for full redaction, FALSE for post-redaction only, NULL for
 	 * @return string
 	 */
-	private static function preRedact($string, $redact): string {
+	private static function preRedact(string $string, $redact): string {
 
 		if (!$redact) {
 			return $string;
@@ -271,26 +314,35 @@ class Substractor {
 	 * Provides any sub-strings that fully match a given pattern.
 	 *
 	 * @param string $string The string to be searched.
-	 * @param string|string[] $pattern The Substractor pattern to match against or an array of such.
-	 * @param string|string[]|null $redact Characters to redact (set to space) before extraction.
+	 * @param string|string[] $pattern The Substractor pattern to match against, an array of such or an array where each Substractor pattern is keyed by a key pattern.
+	 * @param string|string[]|null $redact Characters to redact from the given string before extraction (default), redact from the result after extraction, or both.
 	 * @return string[] The strings matching the given pattern
 	 */
 	public static function subs(string $string, $pattern, $redact = null): array {
 
 		$substractorPatterns = (array) $pattern;
 
-		$string = self::preRedact($string, $redact);
+		$preRedacted = self::preRedact($string, $redact);
 
 		$result = [];
 
-		foreach ($substractorPatterns as $pattern) {
-			$regExPattern = self::substractorToRegEx($pattern);
+		foreach ($substractorPatterns as $index => $pattern) {
+			# If the index is a string, it should represent a Substractor pattern that the string must match before any extraction is carried out
+			if (!is_integer($index) && is_string($index) && !self::matches($string, $index)) {
+				$subs = Substractor::subs($preRedacted, $index);
+				foreach ($subs as $sub) {
+					$result[] = Substractor::subs($sub, $pattern);
+				}
+			} else {
+				$regExPattern = self::substractorToRegEx($pattern);
 
-			preg_match_all("/$regExPattern/", $string, $matches);
+				preg_match_all("/$regExPattern/", $preRedacted, $matches);
 
-			if (is_array($matches)) {
-				$result = array_merge($result, $matches[0]);
+				if (is_array($matches)) {
+					$result = array_merge($result, $matches[0]);
+				}
 			}
+
 		}
 
 		return self::postRedact($result);
